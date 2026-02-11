@@ -155,6 +155,46 @@ footer{
     font-size:14px;
   }
 }
+.countdown{
+  background:linear-gradient(135deg, #ff9a9e, #fad0c4);
+  padding:20px;
+  border-radius:20px;
+  margin:20px 0;
+  color:#fff;
+  font-weight:600;
+  font-size:18px;
+  text-shadow:0 2px 4px rgba(0,0,0,0.2);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.time-unit{
+  display:inline-block;
+  padding:8px 12px;
+  background:rgba(255,255,255,0.2);
+  border-radius:12px;
+  animation:bounce 2s ease-in-out infinite;
+  animation-delay:var(--delay);
+  backdrop-filter:blur(10px);
+}
+
+.time-separator{
+  font-size:20px;
+  animation:pulse 1s ease-in-out infinite;
+}
+
+@keyframes bounce{
+  0%,100%{transform:translateY(0) scale(1);}
+  50%{transform:translateY(-3px) scale(1.05);}
+}
+
+@keyframes pulse{
+  0%,100%{opacity:1;}
+  50%{opacity:0.6;}
+}
 
 @media (max-width: 480px) {
   .card {
@@ -195,6 +235,10 @@ footer{
 
 <audio id="bgMusic" loop autoplay>
   <source src="love.mp3" type="audio/mpeg">
+</audio>
+
+<audio id="popperSound">
+  <source src="popper.mp3" type="audio/mpeg">
 </audio>
 
 <div class="card">
@@ -249,6 +293,8 @@ and somehow became the loudest happiness in it.
 const birthdayStart = new Date("February 13, 2026 00:00:00");
 const birthdayEnd = new Date("February 13, 2026 23:59:59");
 
+let birthdayTriggered = false;
+
 function updateCountdown(){
   const now = new Date();
   const el = document.getElementById("countdown");
@@ -256,12 +302,57 @@ function updateCountdown(){
   if(now >= birthdayStart && now <= birthdayEnd){
     el.innerHTML = "🎉 Today is YOUR day! 🎉";
     launchConfetti();
+    
+    // Trigger celebration immediately on first hit
+    if(!birthdayTriggered){
+      triggerCelebration();
+      birthdayTriggered = true;
+    }
   } else if(now < birthdayStart){
     const diff = birthdayStart - now;
     const days = Math.floor(diff/(1000*60*60*24));
-    el.innerHTML = days + " days to go 🎂";
+    const hours = Math.floor((diff%(1000*60*60*24))/(1000*60*60));
+    const minutes = Math.floor((diff%(1000*60*60))/(1000*60));
+    const seconds = Math.floor((diff%(1000*60))/1000);
+    
+    if(days > 0){
+      el.innerHTML = `<span class="time-unit" style="--delay:0s">${days}d</span><span class="time-separator">:</span><span class="time-unit" style="--delay:0.2s">${hours}h</span><span class="time-separator">:</span><span class="time-unit" style="--delay:0.4s">${minutes}m</span><span class="time-separator">:</span><span class="time-unit" style="--delay:0.6s">${seconds}s</span> to go 🎂`;
+    } else if(hours > 0){
+      el.innerHTML = `<span class="time-unit" style="--delay:0s">${hours}h</span><span class="time-separator">:</span><span class="time-unit" style="--delay:0.2s">${minutes}m</span><span class="time-separator">:</span><span class="time-unit" style="--delay:0.4s">${seconds}s</span> to go 🎂`;
+    } else {
+      el.innerHTML = `<span class="time-unit" style="--delay:0s">${minutes}m</span><span class="time-separator">:</span><span class="time-unit" style="--delay:0.2s">${seconds}s</span> to go 🎂`;
+    }
   } else{
     el.innerHTML = "Still celebrating you ✨";
+  }
+}
+
+function triggerCelebration(){
+  console.log('🎉 Birthday triggered! Attempting to play music...');
+  
+  // Try to play music directly
+  const music = document.getElementById("bgMusic");
+  console.log('Music element:', music);
+  console.log('Music src:', music.src);
+  
+  // Force reload the audio source
+  music.load();
+  console.log('After load - Music src:', music.src);
+  
+  music.volume = 0.5;
+  music.currentTime = 0;
+  
+  const playPromise = music.play();
+  console.log('Play promise:', playPromise);
+  
+  if(playPromise !== undefined) {
+    playPromise.then(() => {
+      console.log('✅ Music playing successfully!');
+    }).catch(error => {
+      console.log('❌ Music play failed:', error);
+      console.log('Error name:', error.name);
+      console.log('Error message:', error.message);
+    });
   }
 }
 
@@ -307,13 +398,8 @@ function playMusic(){
 // Try to autoplay music on page load
 window.addEventListener('load', () => {
   const audio = document.getElementById("bgMusic");
-  audio.volume = 0.3; // Set volume to 30%
-  audio.play().then(() => {
-    isPlaying = true;
-    musicStarted = true;
-    document.querySelector('button').textContent = 'Pause Music ⏸️';
-    document.querySelector('button').style.background = '#ff6b6b';
-  }).catch(error => {
+  audio.volume = 0.3;
+  audio.play().catch(error => {
     console.log('Autoplay blocked, waiting for user interaction');
   });
   
